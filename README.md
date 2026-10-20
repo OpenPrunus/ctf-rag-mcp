@@ -39,6 +39,21 @@ A JSON file, a list of objects:
 
 See `corpus_examples/sample_corpus.json` for a minimal example (3 fictional documents).
 
+## Two deployment modes
+
+- **`rag_server.py`** — MCP stdio server. Simplest for a single machine: the MCP client spawns it
+  directly (no network service to run).
+- **`http_server.py` + `mcp_http_bridge.py`** — centralized mode, for multiple clients sharing one
+  corpus/index (mirrors how a SearXNG instance is typically deployed: one long-running Docker
+  service, reached by a thin stdlib-only client-side bridge on each machine — no per-client
+  dependencies, no per-client copy of the corpus).
+  - `http_server.py` runs as a persistent service (e.g. in `docker-compose.yml`, `restart:
+    unless-stopped`), exposing `POST /search` and `GET /health`. It reloads the corpus file
+    automatically when its mtime changes — no restart needed to pick up updates.
+  - `mcp_http_bridge.py` is the thing each MCP client actually spawns: pure stdlib, no
+    dependencies, just relays MCP stdio calls to the HTTP server's `/search` endpoint via
+    `CTF_RAG_URL`.
+
 ## Usage
 
 ### Locally (without Docker)
@@ -63,6 +78,8 @@ docker run -i --rm -v "$(pwd)/corpus_examples/sample_corpus.json:/data/corpus.js
 
 ### MCP client configuration (example: opencode)
 
+Single machine, stdio mode:
+
 ```json
 {
   "mcp": {
@@ -79,8 +96,25 @@ docker run -i --rm -v "$(pwd)/corpus_examples/sample_corpus.json:/data/corpus.js
 }
 ```
 
-Or without Docker, by pointing directly at the Python script with the `CTF_RAG_CORPUS_PATH`
-environment variable.
+Multiple machines sharing one centralized server (recommended once you have more than one
+client): point every client at the same bridge script and URL — no path or dependency differs
+between machines, so this config is safe to commit and share as-is.
+
+```json
+{
+  "mcp": {
+    "ctf-rag": {
+      "type": "local",
+      "command": ["python3", "/path/to/mcp_http_bridge.py"],
+      "environment": { "CTF_RAG_URL": "http://my-server:8090" },
+      "enabled": true
+    }
+  }
+}
+```
+
+Or without Docker at all, by pointing directly at `rag_server.py` with the
+`CTF_RAG_CORPUS_PATH` environment variable (stdio mode, single machine).
 
 ## Exposed tool
 
