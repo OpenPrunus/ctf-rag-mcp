@@ -1,0 +1,29 @@
+[
+  {
+    "id": "example-001",
+    "title": "Exemple — JWT secret exposé côté client",
+    "category": "Web",
+    "source": "example",
+    "outcome": "solved",
+    "difficulty": "easy",
+    "text": "Un challenge web génère et vérifie des JWT (HS256) côté client, avec la clé de signature codée en dur dans le bundle JavaScript livré au navigateur. En inspectant les sources (DevTools, source maps), on retrouve la clé secrète, ce qui permet de forger un token avec un rôle administrateur et d'accéder à une zone protégée."
+  },
+  {
+    "id": "example-002",
+    "title": "Exemple — SSRF via bypass de filtre de protocole",
+    "category": "Web",
+    "source": "example",
+    "outcome": "solved",
+    "difficulty": "medium",
+    "text": "Une application accepte une URL utilisateur et bloque explicitement le protocole file://. En préfixant l'URL d'un caractère inattendu avant file://, le filtre (basé sur un match de préfixe strict) est contourné alors que le parseur HTTP sous-jacent traite quand même la requête comme un accès fichier local, permettant de lire des fichiers arbitraires sur le serveur."
+  },
+  {
+    "id": "example-003",
+    "title": "Exemple — Boucle de stagnation sur extraction réseau",
+    "category": "Forensics",
+    "source": "example",
+    "outcome": "failed",
+    "difficulty": "medium",
+    "text": "Diagnostic de l'échec : le même script d'extraction manuelle (parsing ligne par ligne d'une capture réseau) a été relancé à l'identique plusieurs dizaines de fois sans jamais ajuster la méthode, produisant systématiquement un résultat tronqué. Une extraction en une seule passe avec l'outil dédié (plutôt qu'un parsing manuel fragile) aurait évité la boucle."
+  }
+]
