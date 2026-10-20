@@ -1,67 +1,67 @@
 # ctf-rag-mcp
 
-Un serveur MCP (stdio) minimaliste qui fait de la recherche **lexicale** (BM25) dans un corpus de
-documents texte fourni par l'utilisateur — à l'origine conçu pour interroger un corpus de writeups
-CTF (succès et échecs) depuis un agent IA autonome, mais le format est générique.
+A minimal MCP (stdio) server that performs **lexical search** (BM25) over a user-provided corpus
+of text documents — originally built to let an autonomous AI agent query a corpus of CTF writeups
+(both solved and failed attempts), but the format is generic.
 
-Ce dépôt ne contient **aucun dataset** : vous fournissez le vôtre (voir `corpus_examples/` pour le
-format attendu et un petit exemple fonctionnel).
+This repository ships **no dataset**: you bring your own (see `corpus_examples/` for the expected
+format and a small working example).
 
-## Pourquoi BM25 plutôt que des embeddings sémantiques
+## Why BM25 instead of semantic embeddings
 
-Sur un corpus de jargon technique dense (noms d'outils, noms de fonctions, CVE, termes rares comme
-« needle », « mergedeep », « prototype pollution »), un petit modèle d'embeddings généraliste a
-tendance à produire des scores de similarité génériquement élevés pour tout texte technique, sans
-vraie discrimination thématique — testé en pratique : un writeup *sans aucun rapport* peut recevoir
-un score de similarité sémantique plus élevé que le writeup réellement pertinent, parce que le
-vocabulaire technique partagé (« exploit », « payload », « flag »...) domine le signal.
+On a corpus of dense technical jargon (tool names, function names, CVEs, rare terms like
+"needle", "mergedeep", "prototype pollution"), a small general-purpose embedding model tends to
+produce generically high similarity scores for any technical text, without real topical
+discrimination — tested in practice: a completely unrelated writeup scored *higher* on semantic
+similarity than the actually relevant one, because shared technical vocabulary ("exploit",
+"payload", "flag"...) dominated the signal.
 
-La recherche lexicale exacte (BM25) s'est montrée nettement plus fiable pour ce cas d'usage : un
-terme rare et précis matche directement, sans dilution.
+Exact lexical search (BM25) proved noticeably more reliable for this use case: a precise, rare
+term matches directly, without dilution.
 
-## Format du corpus
+## Corpus format
 
-Un fichier JSON, liste d'objets :
+A JSON file, a list of objects:
 
 ```json
 [
   {
-    "id": "optionnel",
-    "title": "obligatoire",
-    "category": "optionnel, utilisé pour le filtre --category",
-    "source": "optionnel, affiché dans les résultats",
-    "outcome": "optionnel, ex. solved / failed",
-    "difficulty": "optionnel",
-    "text": "obligatoire — le contenu indexé et renvoyé en extrait"
+    "id": "optional",
+    "title": "required",
+    "category": "optional, used by the --category filter",
+    "source": "optional, shown in results",
+    "outcome": "optional, e.g. solved / failed",
+    "difficulty": "optional",
+    "text": "required — the indexed content, also returned as an excerpt"
   }
 ]
 ```
 
-Voir `corpus_examples/sample_corpus.json` pour un exemple minimal (3 documents fictifs).
+See `corpus_examples/sample_corpus.json` for a minimal example (3 fictional documents).
 
-## Utilisation
+## Usage
 
-### En local (sans Docker)
+### Locally (without Docker)
 
 ```bash
 pip install -r requirements.txt
 CTF_RAG_CORPUS_PATH=./corpus_examples/sample_corpus.json python3 rag_server.py
 ```
 
-Le serveur parle MCP sur stdio (JSON-RPC ligne par ligne) — il n'est pas destiné à être appelé
-directement au clavier, mais lancé par un client MCP (voir plus bas).
+The server speaks MCP over stdio (line-delimited JSON-RPC) — it isn't meant to be typed at
+directly, but launched by an MCP client (see below).
 
-### Avec Docker
+### With Docker
 
 ```bash
-docker build -t ctf-rag-mcp .
-docker run -i --rm -v "$(pwd)/corpus_examples/sample_corpus.json:/data/corpus.json:ro" ctf-rag-mcp
+docker pull prunus/ctf-rag-mcp:latest
+docker run -i --rm -v "$(pwd)/corpus_examples/sample_corpus.json:/data/corpus.json:ro" prunus/ctf-rag-mcp
 ```
 
-(`-i` est nécessaire : le protocole MCP stdio a besoin d'un stdin/stdout connecté en continu — ne
-pas utiliser `-d`.)
+(`-i` is required: the MCP stdio protocol needs a continuously connected stdin/stdout — don't use
+`-d`.)
 
-### Configuration dans un client MCP (exemple : opencode)
+### MCP client configuration (example: opencode)
 
 ```json
 {
@@ -70,8 +70,8 @@ pas utiliser `-d`.)
       "type": "local",
       "command": [
         "docker", "run", "-i", "--rm",
-        "-v", "/chemin/vers/mon_corpus.json:/data/corpus.json:ro",
-        "ctf-rag-mcp"
+        "-v", "/path/to/my_corpus.json:/data/corpus.json:ro",
+        "prunus/ctf-rag-mcp"
       ],
       "enabled": true
     }
@@ -79,23 +79,23 @@ pas utiliser `-d`.)
 }
 ```
 
-Ou sans Docker, en pointant directement sur le script Python et une variable d'environnement
-`CTF_RAG_CORPUS_PATH`.
+Or without Docker, by pointing directly at the Python script with the `CTF_RAG_CORPUS_PATH`
+environment variable.
 
-## Outil exposé
+## Exposed tool
 
-`search_writeups(query, top_k=5, category=None, only_solved=False)` — recherche BM25 dans le
-corpus, renvoie les `top_k` documents les plus pertinents (score, titre, catégorie, source,
-`outcome`, extrait).
+`search_writeups(query, top_k=5, category=None, only_solved=False)` — BM25 search over the
+corpus, returns the `top_k` most relevant documents (score, title, category, source, `outcome`,
+excerpt).
 
-## Variables d'environnement
+## Environment variables
 
-| Variable | Défaut | Rôle |
+| Variable | Default | Role |
 |---|---|---|
-| `CTF_RAG_CORPUS_PATH` | `/data/corpus.json` | Chemin du fichier corpus |
-| `CTF_RAG_EXCERPT_LEN` | `1500` | Longueur max de l'extrait renvoyé par résultat |
-| `CTF_RAG_INDEX_CHARS` | `5000` | Nombre de caractères de `text` indexés par document (perf) |
+| `CTF_RAG_CORPUS_PATH` | `/data/corpus.json` | Path to the corpus file |
+| `CTF_RAG_EXCERPT_LEN` | `1500` | Max excerpt length returned per result |
+| `CTF_RAG_INDEX_CHARS` | `5000` | Characters of `text` indexed per document (performance) |
 
-## Licence
+## License
 
 MIT.
