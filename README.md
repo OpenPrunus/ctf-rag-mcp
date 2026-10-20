@@ -54,8 +54,8 @@ directly, but launched by an MCP client (see below).
 ### With Docker
 
 ```bash
-docker pull prunus/ctf-rag-mcp:latest
-docker run -i --rm -v "$(pwd)/corpus_examples/sample_corpus.json:/data/corpus.json:ro" prunus/ctf-rag-mcp
+docker pull openprunus/ctf-rag-mcp:latest
+docker run -i --rm -v "$(pwd)/corpus_examples/sample_corpus.json:/data/corpus.json:ro" openprunus/ctf-rag-mcp
 ```
 
 (`-i` is required: the MCP stdio protocol needs a continuously connected stdin/stdout — don't use
@@ -71,7 +71,7 @@ docker run -i --rm -v "$(pwd)/corpus_examples/sample_corpus.json:/data/corpus.js
       "command": [
         "docker", "run", "-i", "--rm",
         "-v", "/path/to/my_corpus.json:/data/corpus.json:ro",
-        "prunus/ctf-rag-mcp"
+        "openprunus/ctf-rag-mcp"
       ],
       "enabled": true
     }
